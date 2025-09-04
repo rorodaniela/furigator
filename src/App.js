@@ -45,17 +45,28 @@ function App() {
 		});
 
 	useEffect(() => {
-		window.kuromoji
-			.builder({
-				dicPath: "https://unpkg.com/kuromoji@0.1.2/dict/",
-			})
-			.build((err, tokenizer) => {
-				if (err) {
-					console.error(err);
-				} else {
-					setTokenizer(tokenizer);
-				}
-			});
+		const loadKuromoji = async () => {
+			if (!window.kuromoji) {
+				await new Promise((resolve, reject) => {
+					const script = document.createElement("script");
+					script.src = "https://unpkg.com/kuromoji@0.1.2/build/kuromoji.js";
+					script.onload = resolve;
+					script.onerror = reject;
+					document.body.appendChild(script);
+				});
+			}
+
+			window.kuromoji
+				.builder({
+					dicPath: "https://unpkg.com/kuromoji@0.1.2/dict/",
+				})
+				.build((err, tokenizer) => {
+					if (err) console.error(err);
+					else setTokenizer(tokenizer);
+				});
+		};
+
+		loadKuromoji();
 	}, []);
 
 	const handleTextChange = (e) => {
