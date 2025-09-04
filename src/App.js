@@ -47,23 +47,14 @@ function App() {
 
 	useEffect(() => {
 		setLoading(true);
-		const interval = setInterval(() => {
-			if (window.kuromoji) {
-				window.kuromoji
-					.builder({
-						dicPath: "https://unpkg.com/kuromoji@0.1.2/dict/",
-					})
-					.build((err, tokenizer) => {
-						if (err) console.error(err);
-						else setTokenizer(tokenizer);
-					});
-				clearInterval(interval);
-
+		window.kuromoji.builder({ dicPath: "/dict/" }).build((err, tokenizer) => {
+			if (err) {
+				console.error(err);
+			} else {
+				setTokenizer(tokenizer);
 				setLoading(false);
 			}
-		}, 1000);
-
-		return () => clearInterval(interval);
+		});
 	}, []);
 
 	const handleTextChange = (e) => {
