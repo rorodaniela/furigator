@@ -57,3 +57,27 @@
 	flex-direction: row !important;
 	gap: 12px !important;
 }
+
+.spinner-container {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+}
+
+.spinner {
+	width: 50px; /* Adjust size as needed */
+	height: 50px; /* Adjust size as needed */
+	border: 5px solid #f3f3f3; /* Light gray border for the background of the circle */
+	border-top: 5px solid #3498db; /* Blue border for the spinning part */
+	border-radius: 50%; /* Makes the square div into a circle */
+	animation: spin 1s linear infinite; /* Applies the animation */
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg); /* Start at 0 degrees rotation */
+	}
+	100% {
+		transform: rotate(360deg); /* Rotate a full 360 degrees */
+	}
+}

@@ -18,6 +18,7 @@ function App() {
 	const [tokenizer, setTokenizer] = useState(null);
 	const [editorState, setEditorState] = useState(EditorState.createEmpty());
 	const [hovered, setHovered] = useState({});
+	const [loading, setLoading] = useState(false);
 
 	const renderTokens = (tokens, type) =>
 		tokens.map((t, i) => {
@@ -45,28 +46,24 @@ function App() {
 		});
 
 	useEffect(() => {
-		const loadKuromoji = async () => {
-			if (!window.kuromoji) {
-				await new Promise((resolve, reject) => {
-					const script = document.createElement("script");
-					script.src = "https://unpkg.com/kuromoji@0.1.2/build/kuromoji.js";
-					script.onload = resolve;
-					script.onerror = reject;
-					document.body.appendChild(script);
-				});
+		setLoading(true);
+		const interval = setInterval(() => {
+			if (window.kuromoji) {
+				window.kuromoji
+					.builder({
+						dicPath: "https://unpkg.com/kuromoji@0.1.2/dict/",
+					})
+					.build((err, tokenizer) => {
+						if (err) console.error(err);
+						else setTokenizer(tokenizer);
+					});
+				clearInterval(interval);
+
+				setLoading(false);
 			}
+		}, 1000);
 
-			window.kuromoji
-				.builder({
-					dicPath: "https://unpkg.com/kuromoji@0.1.2/dict/",
-				})
-				.build((err, tokenizer) => {
-					if (err) console.error(err);
-					else setTokenizer(tokenizer);
-				});
-		};
-
-		loadKuromoji();
+		return () => clearInterval(interval);
 	}, []);
 
 	const handleTextChange = (e) => {
@@ -140,8 +137,9 @@ function App() {
 			<input
 				value={text}
 				onChange={handleTextChange}
-				placeholder="contoh: 日本語を勉強します"
+				placeholder="example: 日本語を勉強します"
 				style={{ padding: 8, fontSize: 16 }}
+				disabled={loading}
 			/>
 
 			<div style={{ marginTop: 20, fontSize: "1.5rem", lineHeight: 1.8 }}>
@@ -195,6 +193,12 @@ function App() {
 					{savedTokens}
 				</div>
 			)} */}
+
+			{loading && (
+				<div class="spinner-container">
+					<div class="spinner" />
+				</div>
+			)}
 		</div>
 	);
 }
