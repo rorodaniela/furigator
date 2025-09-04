@@ -81,3 +81,10 @@
 		transform: rotate(360deg); /* Rotate a full 360 degrees */
 	}
 }
+
+ruby rt {
+	visibility: hidden;
+}
+ruby:hover rt {
+	visibility: visible;
+}

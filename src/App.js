@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Editor } from "react-draft-wysiwyg";
-import { EditorState } from "draft-js";
+import { EditorState, convertToRaw } from "draft-js";
+import draftToHtml from "draftjs-to-html";
+import parse from "html-react-parser";
 // import draftToHtml from "draftjs-to-html";
 
 import "./App.css";
@@ -17,31 +19,18 @@ function App() {
 	const [tokens, setTokens] = useState([]);
 	const [tokenizer, setTokenizer] = useState(null);
 	const [editorState, setEditorState] = useState(EditorState.createEmpty());
-	const [hovered, setHovered] = useState({});
+	// const [hovered, setHovered] = useState({});
 	const [loading, setLoading] = useState(false);
 
 	const renderTokens = (tokens, type) =>
 		tokens.map((t, i) => {
-			// console.log("chunk kata", t);
 			return t.reading && kataToHira(t.reading) !== t.surface_form ? (
-				<ruby
-					key={i}
-					style={{ marginRight: 4, cursor: "pointer" }}
-					onMouseEnter={() => setHovered({ ...hovered, [`${i}-${type}`]: true })}
-					onMouseLeave={() => setHovered({ ...hovered, [`${i}-${type}`]: false })}
-				>
+				<ruby key={`${i}-${type}`} style={{ marginRight: 4, cursor: "pointer" }}>
 					{t.surface_form}
-					<rt
-						style={{
-							fontSize: "0.6em",
-							visibility: hovered[`${i}-${type}`] ? "visible" : "hidden",
-						}}
-					>
-						{kataToHira(t.reading)}
-					</rt>
+					<rt style={{ fontSize: "0.6em" }}>{kataToHira(t.reading)}</rt>
 				</ruby>
 			) : (
-				<ruby key={i}>{t.surface_form}</ruby>
+				<ruby key={`${i}-${type}`}>{t.surface_form}</ruby>
 			);
 		});
 
@@ -73,42 +62,22 @@ function App() {
 		setEditorState(state);
 
 		if (tokenizer) {
-			const plainText = state.getCurrentContent().getPlainText(); // fixed: use `state`, not `editorState`
-			const tokens = tokenizer.tokenize(plainText);
+			const rawContent = convertToRaw(state.getCurrentContent());
+			const baseHtml = draftToHtml(rawContent);
 
-			// Instead of string HTML, directly render tokens into JSX
-			setPreviewState(tokens);
+			// ✅ preserve RTE styling and insert furigana only in text nodes
+			const parsed = parse(baseHtml, {
+				replace: (domNode) => {
+					if (domNode.type === "text" && domNode.data.trim() !== "") {
+						const tokens = tokenizer.tokenize(domNode.data);
+						return <>{renderTokens(tokens, "rte")}</>;
+					}
+				},
+			});
+
+			setPreviewState(parsed);
 		}
 	};
-
-	// const handleSave = () => {
-	// 	const rawContent = convertToRaw(editorState.getCurrentContent());
-	// 	const baseHtml = draftToHtml(rawContent);
-
-	// 	if (tokenizer) {
-	// 		const plainText = editorState.getCurrentContent().getPlainText();
-	// 		const tokens = tokenizer.tokenize(plainText);
-
-	// 		let htmlWithRuby = baseHtml;
-
-	// 		tokens.forEach((t) => {
-	// 			if (t.reading && kataToHira(t.reading) !== t.surface_form) {
-	// 				const ruby = `<ruby>${t.surface_form}<rt>${kataToHira(
-	// 					t.reading
-	// 				)}</rt></ruby>`;
-	// 				htmlWithRuby = htmlWithRuby.replace(t.surface_form, ruby);
-	// 			} else {
-	// 				const ruby = `<ruby>${t.surface_form}</ruby>`;
-	// 				htmlWithRuby = htmlWithRuby.replace(t.surface_form, ruby);
-	// 			}
-	// 		});
-
-	// 		console.log("Saved HTML:", htmlWithRuby);
-
-	// 		// ⬅️ save as string
-	// 		setSavedTokens(htmlWithRuby);
-	// 	}
-	// };
 
 	return (
 		<div
@@ -168,22 +137,12 @@ function App() {
 						},
 					}}
 				/>
-				{/* <button onClick={handleSave} style={{ marginTop: 10 }}>
-					Save
-				</button> */}
 			</div>
 
 			<div style={{ marginTop: 20, fontSize: "1.5rem" }}>
 				<span>Result: </span>
-				<div>{previewState && renderTokens(previewState, "rte")}</div>
+				<div>{previewState}</div>
 			</div>
-
-			{/* {savedTokens && (
-				<div style={{ marginTop: 5 }}>
-					<h3>Saved HTML:</h3>
-					{savedTokens}
-				</div>
-			)} */}
 
 			{loading && (
 				<div class="spinner-container">
